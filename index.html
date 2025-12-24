@@ -1,0 +1,275 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Merry Christmas, Kaylie!!!</title>
+  <style>
+    :root {
+      --bg: #e8f5ff;
+      --panel: #d9ecff;
+      --text: #0f172a;
+      --muted: #3b556b;
+      --accent: #2b7abf;
+      --success1: #5ac8fa;
+      --success2: #4bd1a0;
+      --success3: #f7b733;
+      --success4: #f46036;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: radial-gradient(circle at 20% 20%, #d1e7ff 0, #e8f5ff 40%), var(--bg);
+      color: var(--text);
+      font-family: "Courier New", Courier, "SFMono-Regular", Menlo, Monaco, Consolas, monospace;
+      padding: 24px;
+    }
+
+    .shell {
+      background: var(--panel);
+      border: 1px solid #b7d6f5;
+      border-radius: 16px;
+      padding: 20px;
+      width: min(720px, 100%);
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+    }
+
+    header {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 16px;
+      text-align: center;
+    }
+
+    h1 {
+      font-size: 24px;
+      margin: 0;
+      letter-spacing: 0.5px;
+      text-align: center;
+    }
+
+    .description {
+      margin: 0 0 12px;
+      color: var(--muted);
+      font-size: 14px;
+      line-height: 1.6;
+    }
+
+    .status {
+      color: var(--muted);
+      font-size: 14px;
+    }
+
+    .status.final {
+      color: #d70000;
+      font-size: 22px;
+      font-weight: 800;
+      text-align: center;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 10px;
+    }
+
+    button.tile {
+      width: 100%;
+      aspect-ratio: 1;
+      border: 1px solid #334155;
+      border-radius: 12px;
+      background: #f5fbff;
+      color: var(--text);
+      font-size: 16px;
+      font-weight: 600;
+      letter-spacing: 0.2px;
+      cursor: pointer;
+      transition: transform 120ms ease, border-color 120ms ease, background 160ms ease, box-shadow 160ms ease;
+    }
+
+    button.tile:hover:not(.solved) {
+      transform: translateY(-2px);
+      border-color: var(--accent);
+      box-shadow: 0 8px 20px rgba(43, 122, 191, 0.15);
+    }
+
+    button.tile.selected {
+      border-color: var(--accent);
+      background: rgba(43, 122, 191, 0.08);
+      box-shadow: inset 0 0 0 1px rgba(43, 122, 191, 0.4);
+    }
+
+    button.tile.solved {
+      color: #0b1221;
+      cursor: default;
+      transform: none;
+      box-shadow: none;
+    }
+
+    .summary {
+      display: none;
+    }
+  </style>
+</head>
+<body>
+  <div class="shell">
+    <header>
+        <h1>Merry Christmas, Kaylie!!!</h1>
+      <div class="status" id="status">Select any 4 tiles you think belong together.</div>
+    </header>
+      <p class="description">
+        This is a connections-style puzzle, but with a twist: you must solve the groups in order. This means you might have a group correct but it's not the right group for the order.
+      </p>
+    <div class="grid" id="grid"></div>
+    <div class="summary" id="summary"></div>
+  </div>
+
+  <script>
+    const groups = [
+      { name: "Group 1", color: "var(--success1)", words: ["Tram", "Laneway", "Yarra", "MCG"] },          // Melbourne
+      { name: "Group 2", color: "var(--success2)", words: ["Passport", "Border", "Globe", "Embassy"] },    // International
+      { name: "Group 3", color: "var(--success3)", words: ["Punchline", "Improv", "Satire", "Parody"] },   // Comedy
+      { name: "Group 4", color: "var(--success4)", words: ["Diwali", "Carnival", "Oktoberfest", "Mardi Gras"] }        // Festivals
+    ];
+
+    const gridEl = document.getElementById("grid");
+    const statusEl = document.getElementById("status");
+    const summaryEl = document.getElementById("summary");
+
+    const remaining = new Map(groups.map(g => [g.name, g]));
+    const tiles = [];
+    let selection = new Set();
+    let nextGroupIndex = 0; // enforce order: groups[0], then [1], ...
+    const solvedGroups = [];
+
+    function shuffle(array) {
+      for (let i = array.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [array[i], array[j]] = [array[j], array[i]];
+      }
+      return array;
+    }
+
+    function buildTiles() {
+      const items = [];
+      groups.forEach(group => {
+        group.words.forEach(word => {
+          items.push({ word, group: group.name });
+        });
+      });
+
+      shuffle(items).forEach(item => {
+        const btn = document.createElement("button");
+        btn.textContent = item.word;
+        btn.className = "tile";
+        btn.dataset.group = item.group;
+        btn.addEventListener("click", () => onTileClick(btn));
+        btn.dataset.idx = tiles.length;
+        gridEl.appendChild(btn);
+        tiles.push(btn);
+      });
+    }
+
+    function onTileClick(btn) {
+      if (btn.classList.contains("solved")) return;
+
+      if (selection.has(btn)) {
+        selection.delete(btn);
+        btn.classList.remove("selected");
+      } else {
+        selection.add(btn);
+        btn.classList.add("selected");
+      }
+
+      if (selection.size === 4) {
+        evaluateSelection();
+      }
+    }
+
+    function evaluateSelection() {
+      const groupsPicked = new Set(Array.from(selection).map(btn => btn.dataset.group));
+
+      if (groupsPicked.size === 1) {
+        const [groupName] = groupsPicked;
+        const expectedGroup = groups[nextGroupIndex];
+        const group = remaining.get(groupName);
+
+        if (group && expectedGroup && groupName === expectedGroup.name) {
+          // Correct set AND in the required order
+          selection.forEach(btn => {
+            btn.classList.remove("selected");
+            btn.classList.add("solved");
+            btn.style.background = group.color;
+            btn.style.borderColor = group.color;
+          });
+          remaining.delete(groupName);
+          nextGroupIndex += 1;
+          if (!solvedGroups.includes(groupName)) solvedGroups.push(groupName);
+          reorderTiles();
+          selection.clear();
+
+          if (remaining.size === 0) {
+            const finalMsg = "Congrats!!! Your Kris Kringle Present is a MICF voucher - Enjoy the shows (Jules will bring back a printed voucher)";
+            statusEl.textContent = finalMsg;
+            statusEl.classList.add("final");
+            summaryEl.textContent = finalMsg;
+          } else {
+            statusEl.classList.remove("final");
+            statusEl.textContent = `Nice! You found ${group.name}. Next: ${groups[nextGroupIndex]?.name ?? "all done"}.`;
+            updateSummary();
+          }
+          return;
+        }
+      }
+
+      // Incorrect set: simply clear selection, no other effect
+      selection.forEach(btn => btn.classList.remove("selected"));
+      selection.clear();
+      const expected = groups[nextGroupIndex]?.name ?? "None";
+      statusEl.classList.remove("final");
+      statusEl.textContent = `Not correct. Find ${expected} next.`;
+    }
+
+    function updateSummary() {
+      if (remaining.size === 0) {
+        summaryEl.textContent = "All groups found in order! Reload to play again.";
+        return;
+      }
+
+      const nextName = groups[nextGroupIndex]?.name;
+      const queue = Array.from(remaining.keys());
+      summaryEl.textContent = `Next: ${nextName}. Order queue: ${queue.join(" → ")}.`;
+    }
+
+    function reorderTiles() {
+      const rank = groupName => {
+        const idx = solvedGroups.indexOf(groupName);
+        return idx === -1 ? Number.POSITIVE_INFINITY : idx;
+      };
+
+      const sorted = [...tiles].sort((a, b) => {
+        const ra = rank(a.dataset.group);
+        const rb = rank(b.dataset.group);
+        if (ra !== rb) return ra - rb;
+        return Number(a.dataset.idx) - Number(b.dataset.idx);
+      });
+
+      sorted.forEach(btn => gridEl.appendChild(btn));
+    }
+
+    buildTiles();
+    updateSummary();
+  </script>
+</body>
+</html>
+
