@@ -80,7 +80,9 @@
     .grid {
       display: grid;
       grid-template-columns: repeat(4, 1fr);
-      gap: 10px;
+      gap: 8px;
+      max-width: 520px;
+      margin: 0 auto;
     }
 
     button.tile {
@@ -90,9 +92,9 @@
       border-radius: 12px;
       background: #f5fbff;
       color: var(--text);
-      font-size: 16px;
-      font-weight: 600;
-      letter-spacing: 0.2px;
+      font-size: 14px;
+      font-weight: 700;
+      letter-spacing: 0.15px;
       cursor: pointer;
       transition: transform 120ms ease, border-color 120ms ease, background 160ms ease, box-shadow 160ms ease;
     }
@@ -114,6 +116,16 @@
       cursor: default;
       transform: none;
       box-shadow: none;
+    }
+
+    @media (max-width: 480px) {
+      .grid {
+        gap: 6px;
+        max-width: 400px;
+      }
+      button.tile {
+        font-size: 12px;
+      }
     }
 
     .summary {
